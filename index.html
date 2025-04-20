@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f2f5;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .hangman-drawing {
+            width: 300px;
+            height: 300px;
+            margin: 20px auto;
+            position: relative;
+            border: 2px solid #333;
+            background-color: white;
+        }
+
+        .word-display {
+            margin: 20px 0;
+            font-size: 2rem;
+            letter-spacing: 0.5rem;
+            min-height: 3rem;
+        }
+
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+            gap: 5px;
+            margin-top: 20px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .key {
+            padding: 10px;
+            font-size: 1.2rem;
+            border: none;
+            background-color: #e0e0e0;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+
+        .key:hover {
+            background-color: #d0d0d0;
+        }
+
+        .key.used {
+            background-color: #999;
+            color: white;
+            cursor: not-allowed;
+        }
+
+        .message {
+            margin-top: 20px;
+            font-size: 1.5rem;
+            color: #333;
+            min-height: 2.5rem;
+        }
+
+        .button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin: 10px;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        .button.random {
+            background-color: #2196F3;
+        }
+
+        .button.random:hover {
+            background-color: #1976D2;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 10px;
+            font-size: 1.2rem;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            text-transform: uppercase;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .hangman-drawing {
+                width: 250px;
+                height: 250px;
+            }
+
+            .word-display {
+                font-size: 1.5rem;
+            }
+
+            .key {
+                padding: 8px;
+                font-size: 1rem;
+            }
+        }
+
+        .share-link {
+            margin: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            word-break: break-all;
+        }
+
+        .share-link button {
+            margin-left: 10px;
+            padding: 5px 10px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .share-link button:hover {
+            background-color: #5a6268;
+        }
+
+        .copied-tooltip {
+            position: fixed;
+            background-color: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .copied-tooltip.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hangman Game</h1>
+        <canvas id="hangmanCanvas" class="hangman-drawing" width="300" height="300"></canvas>
+        <div id="wordDisplay" class="word-display"></div>
+        <div id="keyboard" class="keyboard"></div>
+        <div id="message" class="message"></div>
+        <div>
+            <button id="customWordBtn" class="button">New Game (Custom Word)</button>
+            <button id="randomWordBtn" class="button random">New Game (Random Word)</button>
+        </div>
+    </div>
+
+    <!-- Word Input Modal -->
+    <div id="wordModal" class="modal">
+        <div class="modal-content">
+            <h2>Enter a Word</h2>
+            <p>Enter a word for others to guess (letters only):</p>
+            <input type="text" id="customWordInput" maxlength="20" placeholder="Enter word here">
+            <div class="modal-buttons">
+                <button id="submitWord" class="button">Start Game</button>
+                <button id="cancelWord" class="button" style="background-color: #dc3545;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Word list for random words
+        const words = [
+            'JAVASCRIPT', 'PYTHON', 'PROGRAMMING', 'COMPUTER', 'DEVELOPER',
+            'CODING', 'WEBSITE', 'INTERNET', 'SOFTWARE', 'ALGORITHM'
+        ];
+
+        // Simple base64 encoding for the word
+        function encodeWord(word) {
+            return btoa(word);
+        }
+
+        // Simple base64 decoding for the word
+        function decodeWord(encoded) {
+            try {
+                return atob(encoded);
+            } catch (e) {
+                return '';
+            }
+        }
+
+        class HangmanGame {
+            constructor() {
+                this.canvas = document.getElementById('hangmanCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.wordDisplay = document.getElementById('wordDisplay');
+                this.keyboard = document.getElementById('keyboard');
+                this.message = document.getElementById('message');
+                this.customWordBtn = document.getElementById('customWordBtn');
+                this.randomWordBtn = document.getElementById('randomWordBtn');
+                this.modal = document.getElementById('wordModal');
+                this.wordInput = document.getElementById('customWordInput');
+                this.submitWordBtn = document.getElementById('submitWord');
+                this.cancelWordBtn = document.getElementById('cancelWord');
+                
+                this.word = '';
+                this.guessedLetters = new Set();
+                this.remainingGuesses = 6;
+                
+                this.initializeCanvas();
+                this.setupKeyboard();
+                this.setupEventListeners();
+                
+                // Check for word in URL
+                const urlWord = this.getWordFromUrl();
+                if (urlWord) {
+                    this.startNewGame(false, urlWord);
+                } else {
+                    this.startNewGame(true);
+                }
+            }
+
+            getWordFromUrl() {
+                const params = new URLSearchParams(window.location.search);
+                const encoded = params.get('w');
+                if (encoded) {
+                    const decoded = decodeWord(encoded);
+                    if (decoded && decoded.match(/^[A-Z]+$/)) {
+                        return decoded;
+                    }
+                }
+                return null;
+            }
+
+            setupEventListeners() {
+                this.customWordBtn.addEventListener('click', () => this.showWordModal());
+                this.randomWordBtn.addEventListener('click', () => this.startNewGame(true));
+                this.submitWordBtn.addEventListener('click', () => this.handleCustomWord());
+                this.cancelWordBtn.addEventListener('click', () => this.hideWordModal());
+                this.wordInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.handleCustomWord();
+                    }
+                });
+                
+                // Only allow letters in the input
+                this.wordInput.addEventListener('input', (e) => {
+                    e.target.value = e.target.value.replace(/[^A-Za-z]/g, '').toUpperCase();
+                });
+            }
+
+            showWordModal() {
+                this.modal.classList.add('show');
+                this.wordInput.value = '';
+                this.wordInput.focus();
+            }
+
+            hideWordModal() {
+                this.modal.classList.remove('show');
+                this.wordInput.value = '';
+            }
+
+            handleCustomWord() {
+                const word = this.wordInput.value.trim().toUpperCase();
+                if (word.length >= 2) {
+                    this.hideWordModal();
+                    this.startNewGame(false, word);
+                    
+                    // Create shareable link
+                    const encoded = encodeWord(word);
+                    const shareUrl = `${window.location.origin}${window.location.pathname}?w=${encoded}`;
+                    
+                    // Show share link and instructions
+                    let shareLinkDiv = document.querySelector('.share-link');
+                    if (!shareLinkDiv) {
+                        shareLinkDiv = document.createElement('div');
+                        shareLinkDiv.className = 'share-link';
+                        this.message.parentNode.insertBefore(shareLinkDiv, this.message);
+                    }
+                    
+                    shareLinkDiv.innerHTML = `
+                        <p>Share this game with friends:</p>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <input type="text" value="${shareUrl}" 
+                                   style="flex: 1; padding: 8px; font-family: monospace; border: 1px solid #ddd; border-radius: 4px;" 
+                                   readonly>
+                            <button onclick="copyLink(this)" 
+                                    style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                Copy
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    alert('Please enter a word with at least 2 letters.');
+                }
+            }
+
+            initializeCanvas() {
+                // Set canvas size with proper scaling
+                const dpr = window.devicePixelRatio || 1;
+                const rect = this.canvas.getBoundingClientRect();
+                
+                this.canvas.width = rect.width * dpr;
+                this.canvas.height = rect.height * dpr;
+                
+                this.ctx.scale(dpr, dpr);
+                this.canvas.style.width = `${rect.width}px`;
+                this.canvas.style.height = `${rect.height}px`;
+                
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeStyle = '#333';
+                this.ctx.lineCap = 'round';
+                this.ctx.lineJoin = 'round';
+            }
+
+            setupKeyboard() {
+                // Clear existing keyboard if any
+                this.keyboard.innerHTML = '';
+                
+                const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+                letters.forEach(letter => {
+                    const button = document.createElement('button');
+                    button.textContent = letter;
+                    button.className = 'key';
+                    button.addEventListener('click', () => this.handleGuess(letter));
+                    this.keyboard.appendChild(button);
+                });
+            }
+
+            startNewGame(useRandomWord = true, customWord = '') {
+                this.word = useRandomWord ? 
+                    words[Math.floor(Math.random() * words.length)] : 
+                    customWord;
+                this.guessedLetters.clear();
+                this.remainingGuesses = 6;
+                this.message.textContent = '';
+                
+                // Reset keyboard
+                Array.from(this.keyboard.children).forEach(button => {
+                    button.className = 'key';
+                    button.disabled = false;
+                });
+                
+                // Clear canvas and reset context
+                const dpr = window.devicePixelRatio || 1;
+                this.ctx.clearRect(0, 0, this.canvas.width / dpr, this.canvas.height / dpr);
+                
+                this.updateWordDisplay();
+            }
+
+            updateWordDisplay() {
+                this.wordDisplay.textContent = this.word
+                    .split('')
+                    .map(letter => this.guessedLetters.has(letter) ? letter : '_')
+                    .join(' ');
+            }
+
+            handleGuess(letter) {
+                if (this.guessedLetters.has(letter)) return;
+                
+                this.guessedLetters.add(letter);
+                const button = Array.from(this.keyboard.children)
+                    .find(btn => btn.textContent === letter);
+                button.className = 'key used';
+                button.disabled = true;
+
+                if (!this.word.includes(letter)) {
+                    this.remainingGuesses--;
+                    this.drawHangman(6 - this.remainingGuesses);
+                }
+
+                this.updateWordDisplay();
+                this.checkGameEnd();
+            }
+
+            checkGameEnd() {
+                const won = this.word
+                    .split('')
+                    .every(letter => this.guessedLetters.has(letter));
+                
+                if (won) {
+                    this.message.textContent = 'Congratulations! You won! 🎉';
+                    this.disableKeyboard();
+                } else if (this.remainingGuesses === 0) {
+                    this.message.textContent = `Game Over! The word was: ${this.word}`;
+                    this.disableKeyboard();
+                }
+            }
+
+            disableKeyboard() {
+                Array.from(this.keyboard.children).forEach(button => {
+                    button.disabled = true;
+                });
+            }
+
+            drawHangman(step) {
+                const ctx = this.ctx;
+                const scale = this.canvas.width / 300; // Scale factor based on canvas width
+                
+                switch(step) {
+                    case 1: // Base
+                        ctx.beginPath();
+                        ctx.moveTo(50 * scale, 250 * scale);
+                        ctx.lineTo(250 * scale, 250 * scale);
+                        ctx.stroke();
+                        break;
+                    
+                    case 2: // Vertical pole
+                        ctx.beginPath();
+                        ctx.moveTo(100 * scale, 250 * scale);
+                        ctx.lineTo(100 * scale, 50 * scale);
+                        ctx.stroke();
+                        break;
+                    
+                    case 3: // Horizontal beam
+                        ctx.beginPath();
+                        ctx.moveTo(100 * scale, 50 * scale);
+                        ctx.lineTo(200 * scale, 50 * scale);
+                        ctx.stroke();
+                        break;
+                    
+                    case 4: // Rope
+                        ctx.beginPath();
+                        ctx.moveTo(200 * scale, 50 * scale);
+                        ctx.lineTo(200 * scale, 90 * scale);
+                        ctx.stroke();
+                        break;
+                    
+                    case 5: // Head
+                        ctx.beginPath();
+                        ctx.arc(200 * scale, 110 * scale, 20 * scale, 0, Math.PI * 2);
+                        ctx.stroke();
+                        break;
+                    
+                    case 6: // Body and limbs
+                        // Body
+                        ctx.beginPath();
+                        ctx.moveTo(200 * scale, 130 * scale);
+                        ctx.lineTo(200 * scale, 190 * scale);
+                        // Arms
+                        ctx.moveTo(200 * scale, 150 * scale);
+                        ctx.lineTo(170 * scale, 170 * scale);
+                        ctx.moveTo(200 * scale, 150 * scale);
+                        ctx.lineTo(230 * scale, 170 * scale);
+                        // Legs
+                        ctx.moveTo(200 * scale, 190 * scale);
+                        ctx.lineTo(170 * scale, 220 * scale);
+                        ctx.moveTo(200 * scale, 190 * scale);
+                        ctx.lineTo(230 * scale, 220 * scale);
+                        ctx.stroke();
+                        break;
+                }
+            }
+        }
+
+        // Simplified copy function
+        function copyLink(button) {
+            const input = button.parentElement.querySelector('input');
+            input.select();
+            document.execCommand('copy');
+            
+            // Change button text temporarily
+            const originalText = button.textContent;
+            button.textContent = 'Copied!';
+            button.style.backgroundColor = '#45a049';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.backgroundColor = '#4CAF50';
+            }, 2000);
+        }
+
+        // Initialize the game when the page loads
+        window.addEventListener('load', () => {
+            new HangmanGame();
+        });
+    </script>
+</body>
+</html> 
