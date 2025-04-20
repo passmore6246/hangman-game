@@ -20,6 +20,8 @@
             background-color: #f0f2f5;
             padding: 20px;
             margin: 0;
+            width: 100%;
+            overflow-x: hidden;
         }
 
         .container {
@@ -32,6 +34,7 @@
             width: 100%;
             margin: 0 auto;
             position: relative;
+            box-sizing: border-box;
         }
 
         .hangman-drawing {
@@ -42,6 +45,7 @@
             border: 2px solid #333;
             background-color: white;
             display: block;
+            max-width: 100%;
         }
 
         .word-display {
@@ -163,22 +167,42 @@
         }
 
         @media (max-width: 600px) {
+            body {
+                padding: 10px;
+                min-height: -webkit-fill-available;
+            }
+
             .container {
                 padding: 1rem;
+                margin: 10px;
+                width: calc(100% - 20px);
             }
 
             .hangman-drawing {
                 width: 250px;
                 height: 250px;
+                margin: 10px auto;
             }
 
             .word-display {
                 font-size: 1.5rem;
+                padding: 0 10px;
             }
 
-            .key {
-                padding: 8px;
-                font-size: 1rem;
+            .keyboard {
+                padding: 0 10px;
+            }
+
+            .button {
+                margin: 5px;
+                padding: 8px 16px;
+            }
+        }
+
+        /* iOS specific fixes */
+        @supports (-webkit-touch-callout: none) {
+            body {
+                min-height: -webkit-fill-available;
             }
         }
 
