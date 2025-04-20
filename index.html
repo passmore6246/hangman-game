@@ -19,6 +19,7 @@
             min-height: 100vh;
             background-color: #f0f2f5;
             padding: 20px;
+            margin: 0;
         }
 
         .container {
@@ -29,6 +30,8 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
             max-width: 800px;
             width: 100%;
+            margin: 0 auto;
+            position: relative;
         }
 
         .hangman-drawing {
@@ -38,6 +41,7 @@
             position: relative;
             border: 2px solid #333;
             background-color: white;
+            display: block;
         }
 
         .word-display {
@@ -342,9 +346,9 @@
                     this.hideWordModal();
                     this.startNewGame(false, word);
                     
-                    // Create shareable link
+                    // Create shareable link with proper HTTP format
                     const encoded = encodeWord(word);
-                    const shareUrl = `${window.location.origin}${window.location.pathname}?w=${encoded}`;
+                    const shareUrl = `https://${window.location.hostname}${window.location.pathname}?w=${encoded}`;
                     
                     // Show share link and instructions
                     let shareLinkDiv = document.querySelector('.share-link');
@@ -355,15 +359,23 @@
                     }
                     
                     shareLinkDiv.innerHTML = `
-                        <p>Share this game with friends:</p>
+                        <p style="margin-bottom: 10px;">Share this game with friends:</p>
                         <div style="display: flex; gap: 10px; margin-top: 10px;">
                             <input type="text" value="${shareUrl}" 
                                    style="flex: 1; padding: 8px; font-family: monospace; border: 1px solid #ddd; border-radius: 4px;" 
                                    readonly>
                             <button onclick="copyLink(this)" 
                                     style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                                Copy
+                                Copy Link
                             </button>
+                        </div>
+                        <div style="margin-top: 15px; text-align: left;">
+                            <p style="font-size: 0.9em; color: #666; margin-bottom: 5px;">Instructions for your friends:</p>
+                            <ol style="font-size: 0.9em; color: #666; margin-left: 15px;">
+                                <li>Copy the link above</li>
+                                <li>Share it with your friends</li>
+                                <li>When they open the link, they'll play with your chosen word: <strong>${word}</strong></li>
+                            </ol>
                         </div>
                     `;
                 } else {
